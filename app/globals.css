@@ -157,3 +157,16 @@ footer{font-size:11px;color:#929b92;padding:0 3px 8px}
 
 .confirm-details summary{display:flex;align-items:center;gap:6px;cursor:pointer;color:#45664b;font-size:11px;font-weight:700;list-style:none}
 .confirm-details summary::-webkit-details-marker{display:none}
+
+.followup-list{display:flex;flex-direction:column;gap:12px;margin:26px 0}
+.followup-list>.panel-heading{margin-bottom:0}
+.followup-card{background:white;border:1px solid var(--line);border-radius:11px;padding:18px 20px}
+.followup-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+.followup-head h3{font:700 14px 'Manrope',sans-serif}
+.followup-head p{font-size:11px;color:#849085;margin-top:6px}
+.followup-due{display:flex;align-items:center;gap:7px;color:#627763;font-size:11px;margin-top:14px}
+.followup-outcome{display:flex;align-items:flex-start;gap:7px;font-size:11px;color:#5f765f;margin-top:13px;line-height:1.6}
+.followup-complete{display:flex;align-items:center;gap:8px;margin-top:14px}
+.followup-complete input{height:36px;flex:1;min-width:0;border:1px solid #dfe5dd;border-radius:7px;padding:0 10px;font:400 11px 'DM Sans',sans-serif}
+.followup-create .form-grid{margin-top:15px}
+@media(max-width:560px){.followup-card{padding:15px}.followup-complete{align-items:stretch;flex-direction:column}.followup-complete input{height:40px}}
