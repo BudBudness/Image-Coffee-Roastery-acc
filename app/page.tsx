@@ -1,7 +1,10 @@
-import { BedDouble, CalendarDays, CircleDollarSign, ClipboardList, Coffee, Users } from "lucide-react";
+import { BedDouble, CalendarDays, CircleDollarSign, ClipboardList, Coffee, LogOut, Users } from "lucide-react";
+import { signOut } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
 
 const money = new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", maximumFractionDigits: 0 });
+
+export const dynamic = "force-dynamic";
 
 type Room = { id: string; room_number: string; room_type: string | null; status: string };
 type Reservation = {
@@ -55,7 +58,7 @@ export default async function Home() {
       </aside>
 
       <section className="main">
-        <header className="topbar"><div><span className="eyebrow">IMAGE COFFEE ROASTERY</span><h1>Accommodation overview</h1><p>Bookings, room availability and guest payments.</p></div><div className="topbar-date"><CalendarDays size={16} /> {new Date().toLocaleDateString("en-UG", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</div></header>
+        <header className="topbar"><div><span className="eyebrow">IMAGE COFFEE ROASTERY</span><h1>Accommodation overview</h1><p>Bookings, room availability and guest payments.</p></div><div className="topbar-actions"><div className="topbar-date"><CalendarDays size={16} /> {new Date().toLocaleDateString("en-UG", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</div><form action={signOut}><button className="signout-button" type="submit"><LogOut size={15} /> Sign out</button></form></div></header>
 
         {!configured && <div className="notice"><strong>Database setup required</strong><span>Add the Supabase project URL and publishable key to the deployment environment, then apply the migration in <code>supabase/migrations</code>. Live data will appear once configured.</span></div>}
         {loadError && <div className="notice warning"><strong>Data connection needs attention</strong><span>{loadError}. Confirm that the migration is applied and your signed-in role has the required access.</span></div>}
