@@ -1,5 +1,6 @@
 import { BedDouble, CalendarDays, CircleDollarSign, ClipboardList, Coffee, LogOut, Users } from "lucide-react";
 import { signOut } from "@/app/actions";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 const money = new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", maximumFractionDigits: 0 });
@@ -17,7 +18,8 @@ type Reservation = {
   payment_status: string;
 };
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ reservation_created?: string }> }) {
+  const query = await searchParams;
   let configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
   let rooms: Room[] = [];
   let reservations: Reservation[] = [];
@@ -58,8 +60,9 @@ export default async function Home() {
       </aside>
 
       <section className="main">
-        <header className="topbar"><div><span className="eyebrow">IMAGE COFFEE ROASTERY</span><h1>Accommodation overview</h1><p>Bookings, room availability and guest payments.</p></div><div className="topbar-actions"><div className="topbar-date"><CalendarDays size={16} /> {new Date().toLocaleDateString("en-UG", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</div><form action={signOut}><button className="signout-button" type="submit"><LogOut size={15} /> Sign out</button></form></div></header>
+        <header className="topbar"><div><span className="eyebrow">IMAGE COFFEE ROASTERY</span><h1>Accommodation overview</h1><p>Bookings, room availability and guest payments.</p></div><div className="topbar-actions"><Link href="/reservations/new" className="primary-link">+ New reservation</Link><div className="topbar-date"><CalendarDays size={16} /> {new Date().toLocaleDateString("en-UG", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</div><form action={signOut}><button className="signout-button" type="submit"><LogOut size={15} /> Sign out</button></form></div></header>
 
+        {query.reservation_created === "1" && <div className="notice success"><strong>Reservation saved</strong><span>The reservation was created successfully. Recent activity has been refreshed.</span></div>}
         {!configured && <div className="notice"><strong>Database setup required</strong><span>Add the Supabase project URL and publishable key to the deployment environment, then apply the migration in <code>supabase/migrations</code>. Live data will appear once configured.</span></div>}
         {loadError && <div className="notice warning"><strong>Data connection needs attention</strong><span>{loadError}. Confirm that the migration is applied and your signed-in role has the required access.</span></div>}
 
