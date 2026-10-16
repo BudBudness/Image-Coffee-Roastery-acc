@@ -74,7 +74,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
         {loadError && <div className="notice warning"><strong>Data connection needs attention</strong><span>{loadError}. Confirm that the migration is applied and your signed-in role has the required access.</span></div>}
 
         <div className="metrics">
-          <article className="metric"><div className="metric-top"><span>Total rooms</span><BedDouble size={18} /></div><strong>{rooms.length || 13}</strong><small>Fixed rate {money.format(100000)} / night</small></article>
+          <article className="metric"><div className="metric-top"><span>Total rooms</span><BedDouble size={18} /></div><strong>{totalRooms}</strong><small>Fixed rate {money.format(100000)} / night</small></article>
           <article className="metric"><div className="metric-top"><span>Occupied now</span><Users size={18} /></div><strong>{occupied}</strong><small>{rooms.length ? Math.round((occupied / rooms.length) * 100) : 0}% of registered rooms</small></article>
           <article className="metric"><div className="metric-top"><span>Arrivals today</span><CalendarDays size={18} /></div><strong>{arrivals}</strong><small>Confirmed reservations</small></article>
           <article className="metric"><div className="metric-top"><span>Outstanding balance (latest 8)</span><CircleDollarSign size={18} /></div><strong className="money">{money.format(outstanding)}</strong><small>After recorded payments · latest 8</small></article>
