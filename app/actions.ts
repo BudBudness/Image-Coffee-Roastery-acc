@@ -65,3 +65,91 @@ export async function createReservation(formData: FormData) {
   revalidatePath("/");
   redirect("/?reservation_created=1");
 }
+
+export async function updateReservationStatus(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const id = String(formData.get("reservation_id") ?? "");
+  const nextStatus = String(formData.get("status") ?? "");
+  if (!id || !["checked_in", "checked_out", "cancelled"].includes(nextStatus)) {
+    redirect("/reservations?status_error=invalid");
+  }
+
+  const { data: reservation, error: readError } = await supabase
+    .from("reservations")
+    .select("id, room_id, status")
+    .eq("id", id)
+    .single();
+
+  if (readError || !reservation) redirect("/reservations?status_error=not_found");
+  const allowed =
+    (reservation.status === "confirmed" && ["checked_in", "cancelled"].includes(nextStatus)) ||
+    (reservation.status === "checked_in" && nextStatus === "checked_out") ||
+    (reservation.status === "enquiry" && nextStatus === "cancelled");
+
+  if (!allowed) redirect("/reservations?status_error=transition");
+  if (nextStatus === "checked_in" && !reservation.room_id) redirect("/reservations?status_error=room_required");
+
+  const { error: updateError } = await supabase
+    .from("reservations")
+    .update({ status: nextStatus })
+    .eq("id", id);
+
+  if (updateError) redirect("/reservations?status_error=save");
+
+  if (reservation.room_id && nextStatus === "checked_in") {
+    await supabase.from("rooms").update({ status: "occupied" }).eq("id", reservation.room_id);
+  }
+  if (reservation.room_id && nextStatus === "checked_out") {
+    await supabase.from("rooms").update({ status: "available" }).eq("id", reservation.room_id).neq("status", "maintenance");
+  }
+
+  revalidatePath("/");
+  revalidatePath("/reservations");
+  redirect("/reservations?status_updated=1");
+}
+
+export async function recordPayment(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const reservationId = String(formData.get("reservation_id") ?? "");
+  const amount = Number(formData.get("amount"));
+  const method = String(formData.get("method") ?? "");
+  const reference = String(formData.get("reference") ?? "").trim();
+
+  if (!reservationId || !Number.isFinite(amount) || amount <= 0 || !["cash", "mobile_money", "bank_transfer", "card", "other"].includes(method)) {
+    redirect("/reservations?payment_error=invalid");
+  }
+
+  const { data: reservation, error: reservationError } = await supabase
+    .from("reservations")
+    .select("id, total_amount, payments(amount)")
+    .eq("id", reservationId)
+    .single();
+
+  if (reservationError || !reservation) redirect("/reservations?payment_error=not_found");
+  const alreadyPaid = ((reservation.payments ?? []) as { amount: number }[]).reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const outstanding = Math.max(0, Number(reservation.total_amount) - alreadyPaid);
+  if (amount > outstanding) redirect("/reservations?payment_error=overpay");
+
+  const { error } = await supabase.from("payments").insert({
+    reservation_id: reservationId,
+    amount,
+    method,
+    reference: reference || null,
+    received_by: user.id,
+  });
+
+  if (error) {
+    const reason = error.code === "42501" ? "permission" : error.message.includes("outstanding") ? "overpay" : "save";
+    redirect("/reservations?payment_error=" + reason);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/reservations");
+  redirect("/reservations?payment_saved=1");
+}
