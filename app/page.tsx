@@ -16,6 +16,7 @@ type Reservation = {
   status: string;
   total_amount: number;
   payment_status: string;
+  payments: { amount: number }[];
 };
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ reservation_created?: string }> }) {
@@ -30,7 +31,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
       const supabase = await createClient();
       const [roomResult, reservationResult] = await Promise.all([
         supabase.from("rooms").select("id, room_number, room_type, status").order("room_number"),
-        supabase.from("reservations").select("id, guest_name, check_in, check_out, status, total_amount, payment_status").order("created_at", { ascending: false }).limit(8),
+        supabase.from("reservations").select("id, guest_name, check_in, check_out, status, total_amount, payment_status, payments(amount)").order("created_at", { ascending: false }).limit(8),
       ]);
       if (roomResult.error) loadError = roomResult.error.message;
       else rooms = roomResult.data ?? [];
@@ -42,11 +43,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
   }
 
   const occupied = rooms.filter((room) => room.status === "occupied").length;
-  const today = new Date().toISOString().slice(0, 10);
+  const dateParts = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Kampala", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const datePart = (type: string) => dateParts.find((part) => part.type === type)?.value ?? "";
+  const today = `${datePart("year")}-${datePart("month")}-${datePart("day")}`;
   const arrivals = reservations.filter((reservation) => reservation.check_in === today && reservation.status === "confirmed").length;
-  const outstanding = reservations
-    .filter((reservation) => reservation.payment_status !== "paid")
-    .reduce((sum, reservation) => sum + Number(reservation.total_amount || 0), 0);
+  const outstanding = reservations.reduce((sum, reservation) => {
+    if (reservation.payment_status === "paid") return sum;
+    const paid = (reservation.payments ?? []).reduce((paidTotal, payment) => paidTotal + Number(payment.amount || 0), 0);
+    return sum + Math.max(0, Number(reservation.total_amount || 0) - paid);
+  }, 0);
+  const displayRooms = rooms.length ? rooms : (!configured ? Array.from({ length: 13 }, (_, i) => ({ id: String(i + 1), room_number: String(i + 1).padStart(2, "0"), room_type: "Standard", status: "not_configured" })) : []);
+  const totalRooms = configured ? rooms.length : 13;
 
   return (
     <main className="shell">
@@ -60,7 +67,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
       </aside>
 
       <section className="main">
-        <header className="topbar"><div><span className="eyebrow">IMAGE COFFEE ROASTERY</span><h1>Accommodation overview</h1><p>Bookings, room availability and guest payments.</p></div><div className="topbar-actions"><Link href="/reservations/new" className="primary-link">+ New reservation</Link><div className="topbar-date"><CalendarDays size={16} /> {new Date().toLocaleDateString("en-UG", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</div><form action={signOut}><button className="signout-button" type="submit"><LogOut size={15} /> Sign out</button></form></div></header>
+        <header className="topbar"><div><span className="eyebrow">IMAGE COFFEE ROASTERY</span><h1>Accommodation overview</h1><p>Bookings, room availability and guest payments.</p></div><div className="topbar-actions"><Link href="/reservations/new" className="primary-link">+ New reservation</Link><div className="topbar-date"><CalendarDays size={16} /> {new Date().toLocaleDateString("en-UG", { timeZone: "Africa/Kampala", weekday: "short", day: "numeric", month: "short", year: "numeric" })}</div><form action={signOut}><button className="signout-button" type="submit"><LogOut size={15} /> Sign out</button></form></div></header>
 
         {query.reservation_created === "1" && <div className="notice success"><strong>Reservation saved</strong><span>The reservation was created successfully. Recent activity has been refreshed.</span></div>}
         {!configured && <div className="notice"><strong>Database setup required</strong><span>Add the Supabase project URL and publishable key to the deployment environment, then apply the migration in <code>supabase/migrations</code>. Live data will appear once configured.</span></div>}
@@ -70,11 +77,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
           <article className="metric"><div className="metric-top"><span>Total rooms</span><BedDouble size={18} /></div><strong>{rooms.length || 13}</strong><small>Fixed rate {money.format(100000)} / night</small></article>
           <article className="metric"><div className="metric-top"><span>Occupied now</span><Users size={18} /></div><strong>{occupied}</strong><small>{rooms.length ? Math.round((occupied / rooms.length) * 100) : 0}% of registered rooms</small></article>
           <article className="metric"><div className="metric-top"><span>Arrivals today</span><CalendarDays size={18} /></div><strong>{arrivals}</strong><small>Confirmed reservations</small></article>
-          <article className="metric"><div className="metric-top"><span>Unpaid reservation value</span><CircleDollarSign size={18} /></div><strong className="money">{money.format(outstanding)}</strong><small>From the latest 8 reservations</small></article>
+          <article className="metric"><div className="metric-top"><span>Outstanding balance (latest 8)</span><CircleDollarSign size={18} /></div><strong className="money">{money.format(outstanding)}</strong><small>After recorded payments · latest 8</small></article>
         </div>
 
-        <section className="panel" id="rooms"><div className="panel-heading"><div><h2>Room inventory</h2><p>Availability and occupancy across the property</p></div><span className="count-pill">{rooms.length || 13} rooms</span></div>
-          <div className="room-grid">{(rooms.length ? rooms : Array.from({ length: 13 }, (_, i) => ({ id: String(i + 1), room_number: String(i + 1).padStart(2, "0"), room_type: "Standard", status: "not_configured" }))).map((room) => <div className="room-tile" key={room.id}><div className="room-number"><BedDouble size={17} /><strong>{room.room_number}</strong></div><span className={"room-status " + (room.status === "available" ? "available" : room.status === "occupied" ? "occupied" : room.status === "maintenance" ? "maintenance" : "setup")}>{room.status.replaceAll("_", " ")}</span><small>{room.room_type || "Standard room"}</small></div>)}</div>
+        <section className="panel" id="rooms"><div className="panel-heading"><div><h2>Room inventory</h2><p>Availability and occupancy across the property</p></div><span className="count-pill">{totalRooms} rooms</span></div>
+          <div className="room-grid">{displayRooms.map((room) => <div className="room-tile" key={room.id}><div className="room-number"><BedDouble size={17} /><strong>{room.room_number}</strong></div><span className={"room-status " + (room.status === "available" ? "available" : room.status === "occupied" ? "occupied" : room.status === "maintenance" ? "maintenance" : "setup")}>{room.status.replaceAll("_", " ")}</span><small>{room.room_type || "Standard room"}</small></div>)}</div>{configured && !rooms.length && <div className="empty-state"><strong>No room records loaded</strong><p>Confirm that the database migration is applied and your account has a staff profile.</p></div>}
         </section>
 
         <section className="panel" id="reservations"><div className="panel-heading"><div><h2>Recent reservations</h2><p>Latest guest booking activity</p></div><ClipboardList size={20} /></div>
