@@ -61,7 +61,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
         <div className="brand"><span className="brand-mark"><Coffee size={22} /></span><div><strong>IMAGE</strong><small>COFFEE ROASTERY</small></div></div>
         <div className="side-label">ACCOMMODATION</div>
         <a className="nav-link active" href="#"><BedDouble size={18} /> Overview</a>
-        <a className="nav-link" href="#reservations"><CalendarDays size={18} /> Reservations</a>
+        <Link className="nav-link" href="/reservations"><CalendarDays size={18} /> Reservations</Link>
         <a className="nav-link" href="#rooms"><Users size={18} /> Rooms & occupancy</a>
         <div className="sidebar-bottom"><span className="status-dot" /> Accommodation desk <small>13 rooms · Mbarara, Uganda</small></div>
       </aside>
