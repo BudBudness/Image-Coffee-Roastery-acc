@@ -21,7 +21,7 @@ Restaurant, bar, and roastery sales are intentionally out of scope.
 
 ## Status
 
-Initial repository foundation. The application UI and database migration are being built here. Live persistence and authentication require a Supabase project and environment variables; deployment is not considered production-ready until those are configured and verified.
+The repository now includes a dashboard, staff sign-in, reservation intake, reservation list, check-in/check-out actions, payment recording, database access controls, and CI checks. Live persistence requires a configured Supabase project and environment variables. The app has not yet been deployed or verified against a live database.
 
 ## Local setup
 
@@ -30,6 +30,8 @@ Initial repository foundation. The application UI and database migration are bei
 3. Copy `.env.example` to `.env.local` and set the Supabase project URL and publishable key.
 4. Apply the SQL migration in `supabase/migrations/` to the intended Supabase project.
 5. Run `npm run dev`.
+
+See [`supabase/SETUP.md`](supabase/SETUP.md) for migration and first-staff setup steps.
 
 ## Environment variables
 
