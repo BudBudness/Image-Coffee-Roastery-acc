@@ -71,6 +71,79 @@ create table public.payments (
   created_at timestamptz not null default now()
 );
 
+-- Validate payments under a row lock so concurrent receipts cannot overpay a booking.
+create or replace function private.validate_payment_amount()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  reservation_total numeric(12,2);
+  already_paid numeric(12,2);
+begin
+  select r.total_amount into reservation_total
+  from public.reservations r
+  where r.id = new.reservation_id
+  for update;
+
+  if reservation_total is null then
+    raise exception 'Reservation not found';
+  end if;
+
+  select coalesce(sum(p.amount), 0) into already_paid
+  from public.payments p
+  where p.reservation_id = new.reservation_id;
+
+  if new.amount > reservation_total - already_paid then
+    raise exception 'Payment exceeds the outstanding reservation balance';
+  end if;
+
+  return new;
+end;
+$;
+
+create or replace function private.sync_reservation_payment_status()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  reservation_total numeric(12,2);
+  total_paid numeric(12,2);
+begin
+  select r.total_amount into reservation_total
+  from public.reservations r
+  where r.id = new.reservation_id;
+
+  select coalesce(sum(p.amount), 0) into total_paid
+  from public.payments p
+  where p.reservation_id = new.reservation_id;
+
+  update public.reservations
+  set payment_status = case
+    when total_paid >= reservation_total then 'paid'::public.payment_status
+    when total_paid > 0 then 'partially_paid'::public.payment_status
+    else 'unpaid'::public.payment_status
+  end
+  where id = new.reservation_id;
+
+  return new;
+end;
+$;
+
+revoke all on function private.validate_payment_amount() from public, anon, authenticated;
+revoke all on function private.sync_reservation_payment_status() from public, anon, authenticated;
+
+create trigger payments_validate_amount
+before insert on public.payments
+for each row execute function private.validate_payment_amount();
+
+create trigger payments_sync_reservation_status
+after insert on public.payments
+for each row execute function private.sync_reservation_payment_status();
+
 create table public.guest_follow_ups (
   id uuid primary key default gen_random_uuid(),
   reservation_id uuid references public.reservations(id) on delete cascade,
