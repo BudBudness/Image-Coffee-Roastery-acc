@@ -1,4 +1,4 @@
-import { BedDouble, CalendarDays, CircleDollarSign, ClipboardList, Coffee, LogOut, Users } from "lucide-react";
+import { BedDouble, CalendarDays, CircleDollarSign, ClipboardList, Coffee, LogOut, MessageCircle, Users } from "lucide-react";
 import { signOut } from "@/app/actions";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -62,6 +62,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
         <div className="side-label">ACCOMMODATION</div>
         <a className="nav-link active" href="#"><BedDouble size={18} /> Overview</a>
         <Link className="nav-link" href="/reservations"><CalendarDays size={18} /> Reservations</Link>
+        <Link className="nav-link" href="/follow-ups"><MessageCircle size={18} /> Guest follow-ups</Link>
         <a className="nav-link" href="#rooms"><Users size={18} /> Rooms & occupancy</a>
         <div className="sidebar-bottom"><span className="status-dot" /> Accommodation desk <small>13 rooms · Mbarara, Uganda</small></div>
       </aside>
