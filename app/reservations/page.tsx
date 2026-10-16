@@ -24,6 +24,7 @@ const messages: Record<string, string> = {
   not_found: "The reservation could not be found.",
   transition: "That status change is not allowed from the current stage.",
   room_required: "A room must be assigned before check-in.",
+  room_unavailable: "This room is currently under maintenance and cannot be checked in.",
   save: "The change could not be saved. Check staff permissions.",
   permission: "Your staff role is not allowed to record payments.",
   overpay: "The payment is greater than the outstanding balance.",
