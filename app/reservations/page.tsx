@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Banknote, CalendarDays, Plus, ReceiptText } from "lucide-react";
-import { recordPayment, updateReservationStatus } from "@/app/actions";
+import { confirmReservation, recordPayment, updateReservationStatus } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
 
 type PageProps = { searchParams: Promise<Record<string, string | undefined>> };
@@ -16,7 +16,7 @@ type Reservation = {
   room_id: string | null;
   payments: { amount: number }[];
 };
-type Room = { id: string; room_number: string };
+type Room = { id: string; room_number: string; status: string };
 
 const money = new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", maximumFractionDigits: 0 });
 const messages: Record<string, string> = {
@@ -28,6 +28,9 @@ const messages: Record<string, string> = {
   save: "The change could not be saved. Check staff permissions.",
   permission: "Your staff role is not allowed to record payments.",
   overpay: "The payment is greater than the outstanding balance.",
+  conflict: "That room has another confirmed stay during these dates. Choose another room.",
+  room_unavailable: "Choose a room that is not under maintenance.",
+  save: "The change could not be saved. Check staff permissions.",
 };
 
 export default async function ReservationsPage({ searchParams }: PageProps) {
@@ -41,7 +44,7 @@ export default async function ReservationsPage({ searchParams }: PageProps) {
     const supabase = await createClient();
     const [reservationResult, roomResult] = await Promise.all([
       supabase.from("reservations").select("id, guest_name, guest_phone, check_in, check_out, status, total_amount, payment_status, room_id, payments(amount)").order("created_at", { ascending: false }).limit(100),
-      supabase.from("rooms").select("id, room_number").order("room_number"),
+      supabase.from("rooms").select("id, room_number, status").order("room_number"),
     ]);
     if (reservationResult.error) loadError = reservationResult.error.message;
     else reservations = (reservationResult.data ?? []) as unknown as Reservation[];
@@ -50,7 +53,7 @@ export default async function ReservationsPage({ searchParams }: PageProps) {
   }
 
   const roomNumbers = new Map(rooms.map((room) => [room.id, room.room_number]));
-  const actionError = query.status_error || query.payment_error;
+  const actionError = query.status_error || query.payment_error || query.confirm_error;
 
   return (
     <main className="form-shell reservations-shell">
@@ -60,6 +63,7 @@ export default async function ReservationsPage({ searchParams }: PageProps) {
       {loadError && <div className="notice warning"><strong>Could not load reservations</strong><span>{loadError}</span></div>}
       {query.payment_saved === "1" && <div className="notice success"><strong>Payment recorded</strong><span>The reservation payment status has been recalculated by the database.</span></div>}
       {query.status_updated === "1" && <div className="notice success"><strong>Reservation updated</strong><span>The reservation status has been updated.</span></div>}
+      {query.reservation_confirmed === "1" && <div className="notice success"><strong>Booking confirmed</strong><span>The guest enquiry is now a confirmed room reservation.</span></div>}
       {actionError && <div className="notice warning"><strong>Action could not be completed</strong><span>{messages[actionError] ?? "Check the reservation and staff permissions."}</span></div>}
       <section className="reservation-list">
         {reservations.length ? reservations.map((reservation) => {
@@ -75,6 +79,7 @@ export default async function ReservationsPage({ searchParams }: PageProps) {
                 {(reservation.status === "confirmed" || reservation.status === "checked_in" || reservation.status === "enquiry") && <span className="action-label">Update stay</span>}
                 {reservation.status === "confirmed" && <form action={updateReservationStatus}><input type="hidden" name="reservation_id" value={reservation.id} /><input type="hidden" name="status" value="checked_in" /><button className="small-action" type="submit">Check in</button></form>}
                 {reservation.status === "checked_in" && <form action={updateReservationStatus}><input type="hidden" name="reservation_id" value={reservation.id} /><input type="hidden" name="status" value="checked_out" /><button className="small-action" type="submit">Check out</button></form>}
+                {reservation.status === "enquiry" && <details className="confirm-details"><summary><CalendarDays size={15} /> Assign room & confirm</summary><form action={confirmReservation} className="payment-form"><input type="hidden" name="reservation_id" value={reservation.id} /><label>Room<select name="room_id" required defaultValue=""><option value="" disabled>Select room</option>{rooms.filter((room) => room.status !== "maintenance").map((room) => <option key={room.id} value={room.id}>Room {room.room_number} · {room.status}</option>)}</select></label><button className="small-action" type="submit">Confirm booking</button></form></details>}
                 {(reservation.status === "enquiry" || reservation.status === "confirmed") && <form action={updateReservationStatus}><input type="hidden" name="reservation_id" value={reservation.id} /><input type="hidden" name="status" value="cancelled" /><button className="small-action secondary" type="submit">Cancel</button></form>}
               </div>
               {outstanding > 0 && !["cancelled", "checked_out"].includes(reservation.status) && <details className="payment-details"><summary><Banknote size={15} /> Record payment</summary><form action={recordPayment} className="payment-form"><input type="hidden" name="reservation_id" value={reservation.id} /><label>Amount (UGX)<input type="number" name="amount" min="1" max={outstanding} step="1" defaultValue={outstanding} required /></label><label>Method<select name="method" defaultValue="mobile_money"><option value="mobile_money">Mobile Money</option><option value="cash">Cash</option><option value="bank_transfer">Bank transfer</option><option value="card">Card</option><option value="other">Other</option></select></label><label>Reference (optional)<input name="reference" placeholder="Transaction ID" /></label><button className="small-action" type="submit">Save payment</button></form></details>}
