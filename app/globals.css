@@ -154,3 +154,6 @@ footer{font-size:11px;color:#929b92;padding:0 3px 8px}
 .payment-form input,.payment-form select{height:34px;border:1px solid #dfe5dd;border-radius:6px;padding:0 8px;min-width:120px;max-width:180px;background:white;font:400 11px 'DM Sans',sans-serif}
 .reservations-shell .empty-state .primary-link{margin-top:16px}
 @media(max-width:560px){.list-heading{align-items:flex-start;flex-direction:column}.reservation-card{padding:15px}.stay-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-summary{gap:15px;flex-wrap:wrap}.payment-form{align-items:stretch;flex-direction:column}.payment-form label,.payment-form input,.payment-form select{width:100%;max-width:none}.form-brand{letter-spacing:.8px}}
+
+.confirm-details summary{display:flex;align-items:center;gap:6px;cursor:pointer;color:#45664b;font-size:11px;font-weight:700;list-style:none}
+.confirm-details summary::-webkit-details-marker{display:none}
