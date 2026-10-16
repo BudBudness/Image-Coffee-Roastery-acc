@@ -205,3 +205,54 @@ export async function confirmReservation(formData: FormData) {
   revalidatePath("/reservations");
   redirect("/reservations?reservation_confirmed=1");
 }
+
+export async function createFollowUp(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const guestName = String(formData.get("guest_name") ?? "").trim();
+  const guestPhone = String(formData.get("guest_phone") ?? "").trim();
+  const reservationId = String(formData.get("reservation_id") ?? "");
+  const channel = String(formData.get("channel") ?? "phone");
+  const dueAtLocal = String(formData.get("due_at") ?? "");
+  if (!guestName || !dueAtLocal || !["phone", "whatsapp", "email", "sms", "other"].includes(channel)) {
+    redirect("/follow-ups?error=invalid");
+  }
+
+  const dueAt = new Date(dueAtLocal + ":00+03:00");
+  if (!Number.isFinite(dueAt.getTime())) redirect("/follow-ups?error=invalid");
+
+  const { error } = await supabase.from("guest_follow_ups").insert({
+    guest_name: guestName,
+    guest_phone: guestPhone || null,
+    reservation_id: reservationId || null,
+    channel,
+    due_at: dueAt.toISOString(),
+    assigned_to: user.id,
+  });
+  if (error) redirect("/follow-ups?error=save");
+
+  revalidatePath("/follow-ups");
+  redirect("/follow-ups?created=1");
+}
+
+export async function completeFollowUp(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const id = String(formData.get("follow_up_id") ?? "");
+  const outcome = String(formData.get("outcome") ?? "").trim();
+  if (!id) redirect("/follow-ups?error=invalid");
+
+  const { error } = await supabase
+    .from("guest_follow_ups")
+    .update({ completed_at: new Date().toISOString(), outcome: outcome || null, assigned_to: user.id })
+    .eq("id", id)
+    .is("completed_at", null);
+
+  if (error) redirect("/follow-ups?error=save");
+  revalidatePath("/follow-ups");
+  redirect("/follow-ups?completed=1");
+}
