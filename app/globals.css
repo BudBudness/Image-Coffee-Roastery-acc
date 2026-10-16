@@ -90,3 +90,35 @@ footer{font-size:11px;color:#929b92;padding:0 3px 8px}
 .login-error{font-size:12px;line-height:1.5;color:#a4473e;background:#fff0ee;padding:10px;border-radius:7px}
 .login-note{margin-top:21px;font-size:11px}
 .signout-button{border:1px solid var(--line);background:white;border-radius:8px;padding:10px 12px;color:#536155;font:600 12px 'DM Sans',sans-serif;cursor:pointer;white-space:nowrap}
+
+.topbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.primary-link{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:#244a36;color:white;padding:11px 14px;font-size:12px;font-weight:700;white-space:nowrap}
+.primary-link:hover{background:#315b40}
+.notice.success{background:#edf6eb;border-color:#d5e8d1;color:#386a3e}
+.form-shell{min-height:100vh;max-width:1040px;margin:0 auto;padding:26px 22px 55px}
+.form-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.back-link{display:inline-flex;align-items:center;gap:8px;color:#526b56;font-size:12px;font-weight:700}
+.form-brand{display:flex;align-items:center;gap:8px;color:#526b56;font-size:10px;font-weight:700;letter-spacing:1.4px}
+.form-card{background:white;border:1px solid var(--line);border-radius:15px;padding:clamp(20px,4vw,38px)}
+.form-card h1{margin-top:8px}
+.form-intro{font-size:13px;color:var(--muted);line-height:1.7;margin:8px 0 25px}
+.reservation-form{margin-top:25px}
+.form-section-title{font:700 14px 'Manrope',sans-serif;border-bottom:1px solid var(--line);padding-bottom:11px;margin:25px 0 16px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}
+.form-grid label{display:flex;flex-direction:column;gap:8px;color:#4e5d51;font-size:12px;font-weight:700}
+.form-grid input,.form-grid select,.form-grid textarea{width:100%;min-width:0;border:1px solid #dfe5dd;border-radius:8px;background:white;padding:12px;color:#27352b;font:400 13px 'DM Sans',sans-serif;outline:none}
+.form-grid input,.form-grid select{height:44px}
+.form-grid textarea{resize:vertical;line-height:1.5}
+.form-grid input:focus,.form-grid select:focus,.form-grid textarea:focus{border-color:#6c8c70;box-shadow:0 0 0 3px #e7f0e7}
+.form-grid label small{font-size:10px;line-height:1.5;color:#8b948c;font-weight:400}
+.full-span{grid-column:1/-1}
+.rate-note{display:flex;align-items:flex-start;gap:12px;background:#f5f7f2;border-radius:9px;padding:15px;margin-top:24px;color:#547358}
+.rate-note strong,.rate-note small{display:block}
+.rate-note strong{font-size:12px}
+.rate-note small{font-size:11px;color:#818d81;margin-top:5px;line-height:1.5}
+.form-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:25px}
+.cancel-button,.form-actions button{height:43px;border-radius:8px;padding:0 17px;display:inline-flex;align-items:center;justify-content:center;font:700 12px 'DM Sans',sans-serif}
+.cancel-button{border:1px solid var(--line);color:#59665b}
+.form-actions button{border:0;background:#244a36;color:white;cursor:pointer}
+.form-actions button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:560px){.form-shell{padding:18px 12px 35px}.form-topbar{align-items:flex-start;gap:12px}.form-brand{font-size:8px}.form-grid{grid-template-columns:1fr}.full-span{grid-column:auto}.topbar-actions{align-items:flex-start}.primary-link{padding:10px}.form-card{padding:18px}}
