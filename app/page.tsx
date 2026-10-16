@@ -1,0 +1,81 @@
+import { BedDouble, CalendarDays, CircleDollarSign, ClipboardList, Coffee, Users } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+
+const money = new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", maximumFractionDigits: 0 });
+
+type Room = { id: string; room_number: string; room_type: string | null; status: string };
+type Reservation = {
+  id: string;
+  guest_name: string;
+  check_in: string;
+  check_out: string;
+  status: string;
+  total_amount: number;
+  payment_status: string;
+};
+
+export default async function Home() {
+  let configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+  let rooms: Room[] = [];
+  let reservations: Reservation[] = [];
+  let loadError = "";
+
+  if (configured) {
+    try {
+      const supabase = await createClient();
+      const [roomResult, reservationResult] = await Promise.all([
+        supabase.from("rooms").select("id, room_number, room_type, status").order("room_number"),
+        supabase.from("reservations").select("id, guest_name, check_in, check_out, status, total_amount, payment_status").order("created_at", { ascending: false }).limit(8),
+      ]);
+      if (roomResult.error) loadError = roomResult.error.message;
+      else rooms = roomResult.data ?? [];
+      if (reservationResult.error && !loadError) loadError = reservationResult.error.message;
+      else reservations = reservationResult.data ?? [];
+    } catch (error) {
+      loadError = error instanceof Error ? error.message : "Could not connect to the database.";
+    }
+  }
+
+  const occupied = rooms.filter((room) => room.status === "occupied").length;
+  const today = new Date().toISOString().slice(0, 10);
+  const arrivals = reservations.filter((reservation) => reservation.check_in === today && reservation.status === "confirmed").length;
+  const outstanding = reservations
+    .filter((reservation) => reservation.payment_status !== "paid")
+    .reduce((sum, reservation) => sum + Number(reservation.total_amount || 0), 0);
+
+  return (
+    <main className="shell">
+      <aside className="sidebar">
+        <div className="brand"><span className="brand-mark"><Coffee size={22} /></span><div><strong>IMAGE</strong><small>COFFEE ROASTERY</small></div></div>
+        <div className="side-label">ACCOMMODATION</div>
+        <a className="nav-link active" href="#"><BedDouble size={18} /> Overview</a>
+        <a className="nav-link" href="#reservations"><CalendarDays size={18} /> Reservations</a>
+        <a className="nav-link" href="#rooms"><Users size={18} /> Rooms & occupancy</a>
+        <div className="sidebar-bottom"><span className="status-dot" /> Accommodation desk <small>13 rooms · Mbarara, Uganda</small></div>
+      </aside>
+
+      <section className="main">
+        <header className="topbar"><div><span className="eyebrow">IMAGE COFFEE ROASTERY</span><h1>Accommodation overview</h1><p>Bookings, room availability and guest payments.</p></div><div className="topbar-date"><CalendarDays size={16} /> {new Date().toLocaleDateString("en-UG", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</div></header>
+
+        {!configured && <div className="notice"><strong>Database setup required</strong><span>Add the Supabase project URL and publishable key to the deployment environment, then apply the migration in <code>supabase/migrations</code>. Live data will appear once configured.</span></div>}
+        {loadError && <div className="notice warning"><strong>Data connection needs attention</strong><span>{loadError}. Confirm that the migration is applied and your signed-in role has the required access.</span></div>}
+
+        <div className="metrics">
+          <article className="metric"><div className="metric-top"><span>Total rooms</span><BedDouble size={18} /></div><strong>{rooms.length || 13}</strong><small>Fixed rate {money.format(100000)} / night</small></article>
+          <article className="metric"><div className="metric-top"><span>Occupied now</span><Users size={18} /></div><strong>{occupied}</strong><small>{rooms.length ? Math.round((occupied / rooms.length) * 100) : 0}% of registered rooms</small></article>
+          <article className="metric"><div className="metric-top"><span>Arrivals today</span><CalendarDays size={18} /></div><strong>{arrivals}</strong><small>Confirmed reservations</small></article>
+          <article className="metric"><div className="metric-top"><span>Unpaid reservation value</span><CircleDollarSign size={18} /></div><strong className="money">{money.format(outstanding)}</strong><small>From the latest 8 reservations</small></article>
+        </div>
+
+        <section className="panel" id="rooms"><div className="panel-heading"><div><h2>Room inventory</h2><p>Availability and occupancy across the property</p></div><span className="count-pill">{rooms.length || 13} rooms</span></div>
+          <div className="room-grid">{(rooms.length ? rooms : Array.from({ length: 13 }, (_, i) => ({ id: String(i + 1), room_number: String(i + 1).padStart(2, "0"), room_type: "Standard", status: "not_configured" }))).map((room) => <div className="room-tile" key={room.id}><div className="room-number"><BedDouble size={17} /><strong>{room.room_number}</strong></div><span className={"room-status " + (room.status === "available" ? "available" : room.status === "occupied" ? "occupied" : room.status === "maintenance" ? "maintenance" : "setup")}>{room.status.replaceAll("_", " ")}</span><small>{room.room_type || "Standard room"}</small></div>)}</div>
+        </section>
+
+        <section className="panel" id="reservations"><div className="panel-heading"><div><h2>Recent reservations</h2><p>Latest guest booking activity</p></div><ClipboardList size={20} /></div>
+          {reservations.length ? <div className="table-wrap"><table><thead><tr><th>Guest</th><th>Stay</th><th>Status</th><th>Payment</th><th>Total</th></tr></thead><tbody>{reservations.map((reservation) => <tr key={reservation.id}><td className="guest-name">{reservation.guest_name}</td><td>{reservation.check_in} <span className="muted">to</span> {reservation.check_out}</td><td><span className={"badge " + reservation.status}>{reservation.status}</span></td><td>{reservation.payment_status.replaceAll("_", " ")}</td><td className="amount">{money.format(Number(reservation.total_amount))}</td></tr>)}</tbody></table></div> : <div className="empty-state"><div className="empty-icon"><CalendarDays size={22} /></div><strong>No reservations to display</strong><p>Reservations will appear here after the database is connected and records are created.</p></div>}
+        </section>
+        <footer>Accommodation management · All prices in UGX · Restaurant and roastery sales excluded</footer>
+      </section>
+    </main>
+  );
+}
