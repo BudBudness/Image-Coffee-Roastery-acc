@@ -22,7 +22,7 @@ export default async function NewReservationPage({ searchParams }: PageProps) {
 
   if (configured) {
     const supabase = await createClient();
-    const { data, error } = await supabase.from("rooms").select("id, room_number, status").eq("status", "available").order("room_number");
+    const { data, error } = await supabase.from("rooms").select("id, room_number, status").neq("status", "maintenance").order("room_number");
     if (error) roomError = error.message;
     else rooms = data ?? [];
   }
@@ -53,7 +53,7 @@ export default async function NewReservationPage({ searchParams }: PageProps) {
             <label className="full-span">Room for confirmed booking
               <select name="room_id" defaultValue="">
                 <option value="">No room assigned (enquiry only)</option>
-                {rooms.map((room) => <option value={room.id} key={room.id}>Room {room.room_number} · Available</option>)}
+                {rooms.map((room) => <option value={room.id} key={room.id}>Room {room.room_number} · Current status: {room.status}</option>)}
               </select>
               <small>Only currently available rooms are listed. The database also blocks overlapping confirmed stays.</small>
             </label>
