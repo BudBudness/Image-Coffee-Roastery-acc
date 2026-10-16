@@ -122,3 +122,35 @@ footer{font-size:11px;color:#929b92;padding:0 3px 8px}
 .form-actions button{border:0;background:#244a36;color:white;cursor:pointer}
 .form-actions button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:560px){.form-shell{padding:18px 12px 35px}.form-topbar{align-items:flex-start;gap:12px}.form-brand{font-size:8px}.form-grid{grid-template-columns:1fr}.full-span{grid-column:auto}.topbar-actions{align-items:flex-start}.primary-link{padding:10px}.form-card{padding:18px}}
+
+.reservations-shell{max-width:1120px}
+.list-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin:8px 0 25px}
+.list-heading h1{margin-top:8px}
+.list-heading p{font-size:13px;color:var(--muted);margin-top:7px}
+.reservation-list{display:flex;flex-direction:column;gap:13px;margin-bottom:25px}
+.reservation-card{background:white;border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+.reservation-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+.reservation-card-head h2{font:700 16px 'Manrope',sans-serif}
+.reservation-card-head p{font-size:11px;color:#849085;margin-top:6px}
+.stay-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;background:#f8f9f6;border-radius:8px;padding:14px;margin-top:17px}
+.stay-summary small,.stay-summary strong{display:block}
+.stay-summary small{font-size:9px;color:#8a958b;letter-spacing:1px;font-weight:700;margin-bottom:7px}
+.stay-summary strong{font-size:12px;color:#334438}
+.payment-summary{display:flex;align-items:center;gap:24px;margin:16px 0}
+.payment-summary div span,.payment-summary div strong{display:block}
+.payment-summary div span{font-size:10px;color:#8a958b;margin-bottom:5px}
+.payment-summary div strong{font-size:12px;color:#334438}
+.payment-summary .balance-due{color:#a4473e}
+.payment-summary .balance-clear{color:#3c7145}
+.reservation-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid var(--line);padding-top:14px;flex-wrap:wrap}
+.status-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.action-label{font-size:10px;color:#89938a;font-weight:700;margin-right:3px}
+.small-action{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;padding:8px 11px;background:#244a36;color:white;font:700 11px 'DM Sans',sans-serif;cursor:pointer}
+.small-action.secondary{background:#f5f1ee;color:#86564c}
+.payment-details summary{display:flex;align-items:center;gap:6px;cursor:pointer;color:#45664b;font-size:11px;font-weight:700;list-style:none}
+.payment-details summary::-webkit-details-marker{display:none}
+.payment-form{display:flex;align-items:flex-end;gap:9px;flex-wrap:wrap;margin-top:13px;padding:13px;background:#f7f8f4;border-radius:8px}
+.payment-form label{display:flex;flex-direction:column;gap:5px;font-size:10px;font-weight:700;color:#677368}
+.payment-form input,.payment-form select{height:34px;border:1px solid #dfe5dd;border-radius:6px;padding:0 8px;min-width:120px;max-width:180px;background:white;font:400 11px 'DM Sans',sans-serif}
+.reservations-shell .empty-state .primary-link{margin-top:16px}
+@media(max-width:560px){.list-heading{align-items:flex-start;flex-direction:column}.reservation-card{padding:15px}.stay-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-summary{gap:15px;flex-wrap:wrap}.payment-form{align-items:stretch;flex-direction:column}.payment-form label,.payment-form input,.payment-form select{width:100%;max-width:none}.form-brand{letter-spacing:.8px}}
