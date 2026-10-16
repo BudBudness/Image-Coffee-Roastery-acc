@@ -91,6 +91,16 @@ export async function updateReservationStatus(formData: FormData) {
 
   if (!allowed) redirect("/reservations?status_error=transition");
   if (nextStatus === "checked_in" && !reservation.room_id) redirect("/reservations?status_error=room_required");
+  if (nextStatus === "checked_in" && reservation.room_id) {
+    const { data: room, error: roomError } = await supabase
+      .from("rooms")
+      .select("status")
+      .eq("id", reservation.room_id)
+      .single();
+    if (roomError || !room || room.status === "maintenance") {
+      redirect("/reservations?status_error=room_unavailable");
+    }
+  }
 
   const { error: updateError } = await supabase
     .from("reservations")
