@@ -21,7 +21,7 @@ type Reservation = {
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ reservation_created?: string }> }) {
   const query = await searchParams;
-  let configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+  const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
   let rooms: Room[] = [];
   let reservations: Reservation[] = [];
   let loadError = "";
