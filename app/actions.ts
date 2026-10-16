@@ -163,3 +163,45 @@ export async function recordPayment(formData: FormData) {
   revalidatePath("/reservations");
   redirect("/reservations?payment_saved=1");
 }
+
+export async function confirmReservation(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const id = String(formData.get("reservation_id") ?? "");
+  const roomId = String(formData.get("room_id") ?? "");
+  if (!id || !roomId) redirect("/reservations?confirm_error=invalid");
+
+  const { data: reservation, error: readError } = await supabase
+    .from("reservations")
+    .select("id, status")
+    .eq("id", id)
+    .single();
+
+  if (readError || !reservation) redirect("/reservations?confirm_error=not_found");
+  if (reservation.status !== "enquiry") redirect("/reservations?confirm_error=transition");
+
+  const { data: room, error: roomError } = await supabase
+    .from("rooms")
+    .select("status")
+    .eq("id", roomId)
+    .single();
+  if (roomError || !room || room.status === "maintenance") {
+    redirect("/reservations?confirm_error=room_unavailable");
+  }
+
+  const { error } = await supabase
+    .from("reservations")
+    .update({ room_id: roomId, status: "confirmed" })
+    .eq("id", id);
+
+  if (error) {
+    const reason = error.code === "23P01" ? "conflict" : error.code === "42501" ? "permission" : "save";
+    redirect("/reservations?confirm_error=" + reason);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/reservations");
+  redirect("/reservations?reservation_confirmed=1");
+}
