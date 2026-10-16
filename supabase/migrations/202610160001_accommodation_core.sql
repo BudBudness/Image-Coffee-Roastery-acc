@@ -1,5 +1,5 @@
 -- Image Coffee Roastery accommodation system
--- Run against the intended Supabase project only after reviewing the schema.
+-- Apply to the intended Supabase project after review.
 create extension if not exists btree_gist;
 
 create type public.room_status as enum ('available', 'occupied', 'maintenance');
@@ -50,7 +50,7 @@ create table public.reservations (
   check (status = 'enquiry' or room_id is not null)
 );
 
--- Active bookings for the same room cannot overlap. Enquiries do not hold inventory.
+-- Confirmed and in-house stays cannot overlap for the same room.
 alter table public.reservations
   add constraint reservations_no_overlapping_active_stays
   exclude using gist (
@@ -93,6 +93,7 @@ create index follow_ups_due_idx on public.guest_follow_ups (due_at) where comple
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   new.updated_at = now();
@@ -105,12 +106,17 @@ for each row execute function public.set_updated_at();
 create trigger reservations_set_updated_at before update on public.reservations
 for each row execute function public.set_updated_at();
 
--- Staff membership is checked against a protected table, not user-editable auth metadata.
-create or replace function public.is_staff()
+-- Authorization helpers live outside the exposed public schema. They read the
+-- protected staff table as the function owner to avoid recursive RLS policies.
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+grant usage on schema private to authenticated;
+
+create or replace function private.is_staff()
 returns boolean
 language sql
 stable
-security invoker
+security definer
 set search_path = ''
 as $$
   select exists (
@@ -119,11 +125,11 @@ as $$
   );
 $$;
 
-create or replace function public.has_staff_role(allowed_roles public.staff_role[])
+create or replace function private.has_staff_role(allowed_roles public.staff_role[])
 returns boolean
 language sql
 stable
-security invoker
+security definer
 set search_path = ''
 as $$
   select exists (
@@ -133,6 +139,11 @@ as $$
   );
 $$;
 
+revoke all on function private.is_staff() from public, anon;
+revoke all on function private.has_staff_role(public.staff_role[]) from public, anon;
+grant execute on function private.is_staff() to authenticated;
+grant execute on function private.has_staff_role(public.staff_role[]) to authenticated;
+
 alter table public.staff_profiles enable row level security;
 alter table public.rooms enable row level security;
 alter table public.reservations enable row level security;
@@ -141,48 +152,47 @@ alter table public.guest_follow_ups enable row level security;
 
 create policy "Staff can read staff profiles"
 on public.staff_profiles for select to authenticated
-using (public.is_staff());
+using (private.is_staff());
 
 create policy "Managers can manage staff profiles"
 on public.staff_profiles for all to authenticated
-using (public.has_staff_role(array['manager']::public.staff_role[]))
-with check (public.has_staff_role(array['manager']::public.staff_role[]));
+using (private.has_staff_role(array['manager']::public.staff_role[]))
+with check (private.has_staff_role(array['manager']::public.staff_role[]));
 
 create policy "Staff can read rooms"
 on public.rooms for select to authenticated
-using (public.is_staff());
+using (private.is_staff());
 create policy "Managers and reception can manage rooms"
 on public.rooms for all to authenticated
-using (public.has_staff_role(array['manager','reception']::public.staff_role[]))
-with check (public.has_staff_role(array['manager','reception']::public.staff_role[]));
+using (private.has_staff_role(array['manager','reception']::public.staff_role[]))
+with check (private.has_staff_role(array['manager','reception']::public.staff_role[]));
 
 create policy "Staff can read reservations"
 on public.reservations for select to authenticated
-using (public.is_staff());
+using (private.is_staff());
 create policy "Staff can create reservations"
 on public.reservations for insert to authenticated
-with check (public.is_staff());
+with check (private.is_staff());
 create policy "Managers and reception can update reservations"
 on public.reservations for update to authenticated
-using (public.has_staff_role(array['manager','reception']::public.staff_role[]))
-with check (public.has_staff_role(array['manager','reception']::public.staff_role[]));
+using (private.has_staff_role(array['manager','reception']::public.staff_role[]))
+with check (private.has_staff_role(array['manager','reception']::public.staff_role[]));
 
 create policy "Staff can read payments"
 on public.payments for select to authenticated
-using (public.is_staff());
+using (private.is_staff());
 create policy "Managers and accounts can record payments"
 on public.payments for insert to authenticated
-with check (public.has_staff_role(array['manager','accounts']::public.staff_role[]));
+with check (private.has_staff_role(array['manager','accounts']::public.staff_role[]));
 
 create policy "Staff can read follow ups"
 on public.guest_follow_ups for select to authenticated
-using (public.is_staff());
+using (private.is_staff());
 create policy "Staff can manage follow ups"
 on public.guest_follow_ups for all to authenticated
-using (public.is_staff())
-with check (public.is_staff());
+using (private.is_staff())
+with check (private.is_staff());
 
--- Seed the 13 rooms. No guest or payment data is seeded.
 insert into public.rooms (room_number, room_type)
 values
   ('01','Standard'),('02','Standard'),('03','Standard'),('04','Standard'),
@@ -190,8 +200,7 @@ values
   ('09','Standard'),('10','Standard'),('11','Standard'),('12','Standard'),('13','Standard')
 on conflict (room_number) do nothing;
 
--- Supabase no longer auto-exposes new public tables on new projects.
--- Explicitly grant only authenticated staff access; RLS remains the row-level gate.
+-- Explicit grants are required for newly created tables on current Supabase projects.
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on public.staff_profiles to authenticated;
 grant select, insert, update, delete on public.rooms to authenticated;
