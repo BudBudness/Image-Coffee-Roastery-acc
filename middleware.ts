@@ -6,6 +6,7 @@ export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
+  // Keep the setup page accessible while the Supabase project is not configured.
   if (!url || !key) return response;
 
   const supabase = createServerClient(url, key, {
@@ -19,7 +20,23 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  const isLoginPage = request.nextUrl.pathname === "/login";
+
+  if (!data?.claims && !isLoginPage) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("next", request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (data?.claims && isLoginPage) {
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = "/";
+    dashboardUrl.search = "";
+    return NextResponse.redirect(dashboardUrl);
+  }
+
   return response;
 }
 
