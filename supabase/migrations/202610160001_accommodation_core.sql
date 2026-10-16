@@ -71,6 +71,10 @@ create table public.payments (
   created_at timestamptz not null default now()
 );
 
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+grant usage on schema private to authenticated;
+
 -- Validate payments under a row lock so concurrent receipts cannot overpay a booking.
 create or replace function private.validate_payment_amount()
 returns trigger
