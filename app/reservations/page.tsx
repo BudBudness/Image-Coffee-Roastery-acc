@@ -29,8 +29,6 @@ const messages: Record<string, string> = {
   permission: "Your staff role is not allowed to record payments.",
   overpay: "The payment is greater than the outstanding balance.",
   conflict: "That room has another confirmed stay during these dates. Choose another room.",
-  room_unavailable: "Choose a room that is not under maintenance.",
-  save: "The change could not be saved. Check staff permissions.",
 };
 
 export default async function ReservationsPage({ searchParams }: PageProps) {
