@@ -81,8 +81,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
-declare
+as $fn$\1declare
   reservation_total numeric(12,2);
   already_paid numeric(12,2);
 begin
@@ -105,15 +104,13 @@ begin
 
   return new;
 end;
-$;
-
+$fn$;\n
 create or replace function private.sync_reservation_payment_status()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
-declare
+as $fn$\1declare
   reservation_total numeric(12,2);
   total_paid numeric(12,2);
 begin
@@ -135,8 +132,7 @@ begin
 
   return new;
 end;
-$;
-
+$fn$;\n
 revoke all on function private.validate_payment_amount() from public, anon, authenticated;
 revoke all on function private.sync_reservation_payment_status() from public, anon, authenticated;
 
